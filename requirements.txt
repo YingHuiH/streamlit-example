@@ -6,3 +6,7 @@ pandasql
 gspread_pandas
 pysmiles
 pubchempy
+matplotlib
+networkx
+datetime
+ssl
