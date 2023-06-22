@@ -4,3 +4,4 @@ streamlit
 shillelagh
 pandasql
 gspread_pandas
+pysmiles
