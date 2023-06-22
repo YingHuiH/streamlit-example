@@ -5,3 +5,4 @@ shillelagh
 pandasql
 gspread_pandas
 pysmiles
+pubchempy
