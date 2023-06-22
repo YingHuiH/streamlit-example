@@ -1,40 +1,31 @@
+# streamlit_app.py
+
 import streamlit as st
+from google.oauth2 import service_account
+#from gsheetsdb import connect
+# from gsheetsdb import connect
+from shillelagh.backends.apsw.db import connect
 
-st.subheader("📗 Google Sheets st.connection using Public URLs")
-
-url = "https://docs.google.com/spreadsheets/d/1JDy9md2VZPz4JbYtRPJLs81_3jUK47nx6GYQjgU8qNY/edit?usp=sharing"
-
-st.write("#### 1. Read public Google Worksheet as Pandas")
-
-with st.echo():
-    import streamlit as st
-    from streamlit_gsheets import GSheetsConnection
-
-    conn = st.experimental_connection("gsheets", type=GSheetsConnection)
-
-    df = conn.read(spreadsheet=url, usecols=[0, 1])
-    st.dataframe(df)
-
-st.write("#### 2. Query public Google Worksheet using SQL")
-st.info(
-    "Mutation SQL queries are in-memory only and do not results in the Worksheet update.",
-    icon="ℹ️",
+# Create a connection object.
+credentials = service_account.Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"],
+    scopes=[
+        "https://www.googleapis.com/auth/spreadsheets",
+    ],
 )
-st.warning(
-    """You can query only one Worksheet in provided public Spreadsheet,
-        use Worksheet name as target in from SQL queries.
-        The worksheet, which you query is defined by GID query parameter or GID parameters to query method.""",
-    icon="⚠️",
-)
+conn = connect(credentials=credentials)
 
+# Perform SQL query on the Google Sheet.
+# Uses st.cache_data to only rerun when the query changes or after 10 min.
+@st.cache_data(ttl=600)
+def run_query(query):
+    rows = conn.execute(query, headers=1)
+    rows = rows.fetchall()
+    return rows
 
-with st.echo():
-    import streamlit as st
-    from streamlit_gsheets import GSheetsConnection
+sheet_url = st.secrets["private_gsheets_url"]
+rows = run_query(f'SELECT * FROM "{sheet_url}"')
 
-    conn = st.experimental_connection("gsheets", type=GSheetsConnection)
-
-    df = conn.query(
-        'select births from "Example 2" limit 10', spreadsheet=url, usecols=[0, 1]
-    )
-    st.dataframe(df)
+# Print results.
+for row in rows:
+    st.write(f"{row.name} has a :{row.pet}:")
